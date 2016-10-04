@@ -201,6 +201,13 @@ namespace XrdCl
       p.Set( "chunkSize", val );
     }
 
+    if( !p.HasProperty( "xcpBlockSize" ) )
+    {
+      int val = DefaultXCpBlockSize;
+      env->GetInt( "XCpBlockSize", val );
+      p.Set( "xcpBlockSize", val );
+    }
+
     if( !p.HasProperty( "initTimeout" ) )
     {
       int val = DefaultCPInitTimeout;
