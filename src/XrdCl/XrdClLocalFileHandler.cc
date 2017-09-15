@@ -365,7 +365,7 @@ namespace XrdCl
     else
       openflags |= O_RDONLY;
     if( flags & kXR_delete )
-      openflags |= O_TRUNC;
+      openflags |= O_TRUNC | O_CREAT;
 
     if( flags & kXR_mkdir )
     {

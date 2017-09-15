@@ -2089,7 +2089,7 @@ namespace XrdCl
       HandleError( XRootDStatus( stError, errNotSupported ) );
       return;
     }
-
+    XRootDTransport::UnMarshallRequest(pRequest);
     AnyObject *resp = 0;
     XRootDStatus st = pLFileHandler->Open( url, pRequest, resp );
     if( !st.IsOK() )
