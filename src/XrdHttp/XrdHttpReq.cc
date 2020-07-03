@@ -32,9 +32,9 @@
  * @brief  Main request/response class, handling the logical status of the communication
  * @author Fabrizio Furano
  * @date   Nov 2012
- * 
- * 
- * 
+ *
+ *
+ *
  */
 #include "XrdVersion.hh"
 #include "XrdHttpReq.hh"
@@ -50,8 +50,8 @@
 #include "XrdXrootd/XrdXrootdBridge.hh"
 #include "Xrd/XrdBuffer.hh"
 
-#include <algorithm> 
-#include <functional> 
+#include <algorithm>
+#include <functional>
 #include <cctype>
 #include <locale>
 #include <string>
@@ -163,7 +163,7 @@ void trim(std::string &str)
   while( str.size() && !isgraph(str[0]) ) str.erase(str.begin());
 
   // Trim trailing non-letters
-  
+
   while( str.size() && !isgraph(str[str.size()-1]) )
     str.resize (str.size () - 1);
 
@@ -238,7 +238,7 @@ int XrdHttpReq::parseLine(char *line, int len) {
     // by looking at the first token of the line
     // The token is key
     // The value is val
-    
+
     // Screen out the needed header lines
     if (!strcmp(key, "Connection")) {
 
@@ -459,7 +459,7 @@ int XrdHttpReq::parseFirstLine(char *line, int len) {
     } else {
       request = rtUnknown;
     }
-    
+
     requestverb = key;
 
     // The last token should be the protocol.  If it is HTTP/1.0, then
@@ -539,7 +539,7 @@ int XrdHttpReq::ReqReadV() {
 
   if (j > 0) {
 
-    // Prepare a request header 
+    // Prepare a request header
 
     memset(&xrdreq, 0, sizeof (xrdreq));
 
@@ -603,8 +603,8 @@ int XrdHttpReq::File(XrdXrootd::Bridge::Context &info, //!< the result context
   TRACE(REQ, " XrdHttpReq::File dlen:" << dlen << " send rc:" << rc);
   if (rc) return false;
   writtenbytes += dlen;
-  
-    
+
+
   return true;
 };
 
@@ -613,14 +613,14 @@ bool XrdHttpReq::Done(XrdXrootd::Bridge::Context & info) {
   TRACE(REQ, " XrdHttpReq::Done");
 
   xrdresp = kXR_ok;
-  
-  
+
+
   int r = PostProcessHTTPReq(true);
   // Beware, we don't have to reset() if the result is 0
   if (r) reset();
-  if (r < 0) return false; 
-  
-  
+  if (r < 0) return false;
+
+
   return true;
 };
 
@@ -641,7 +641,7 @@ bool XrdHttpReq::Error(XrdXrootd::Bridge::Context &info, //!< the result context
   // Second part of the ugly hack on stat()
   if ((request == rtGET) && (xrdreq.header.requestid == ntohs(kXR_stat)))
     return true;
-  
+
   return false;
 };
 
@@ -655,12 +655,18 @@ bool XrdHttpReq::Redir(XrdXrootd::Bridge::Context &info, //!< the result context
   char buf[512];
   char hash[512];
   hash[0] = '\0';
-  
+
   if (prot->isdesthttps)
     redirdest = "Location: https://";
   else
     redirdest = "Location: http://";
-  
+  // port -1 signals redirect to local filesystem
+  // switch to file:// protocol
+  if(port==-1)
+  {
+      TRACE(REQ, " XrdHttpReq::Redir Switching to file:// ");
+      redirdest="Location: file://";
+  }
   // Beware, certain Ofs implementations (e.g. EOS) add opaque data directly to the host name
   // This must be correctly treated here and appended to the opaque info
   // that we may already have
@@ -671,23 +677,23 @@ bool XrdHttpReq::Redir(XrdXrootd::Bridge::Context &info, //!< the result context
     redirdest += hname;
     vardata = pp+1;
     int varlen = strlen(vardata);
-    
+
     //Now extract the remaining, vardata points to it
     while(*vardata == '&' && varlen) {vardata++; varlen--;}
-    
+
     // Put the question mark back where it was
     *pp = '?';
   }
   else
     redirdest += hname;
 
-  if (port) {
+  if (port>0) {
     sprintf(buf, ":%d", port);
     redirdest += buf;
   }
+  if (port>0)
+    redirdest += resource.c_str();
 
-  redirdest += resource.c_str();
-  
   // Here we put back the opaque info, if any
   if (vardata) {
     char *newvardata = quote(vardata);
@@ -695,7 +701,7 @@ bool XrdHttpReq::Redir(XrdXrootd::Bridge::Context &info, //!< the result context
     redirdest += newvardata;
     free(newvardata);
   }
-  
+
   // Shall we put also the opaque data of the request? Maybe not
   //int l;
   //if (opaque && opaque->Env(l))
@@ -718,7 +724,7 @@ bool XrdHttpReq::Redir(XrdXrootd::Bridge::Context &info, //!< the result context
   } else
     appendOpaque(redirdest, 0, 0, 0);
 
-  
+
   TRACE(REQ, " XrdHttpReq::Redir Redirecting to " << redirdest);
 
   prot->SendSimpleResp(302, NULL, (char *) redirdest.c_str(), 0, 0, keepalive);
@@ -792,7 +798,7 @@ void XrdHttpReq::appendOpaque(XrdOucString &s, XrdSecEntity *secent, char *hash,
           free(s1);
         }
       }
-      
+
       if (secent->moninfo) {
         s += "&xrdhttpdn=";
         char *s1 = quote(secent->moninfo);
@@ -810,7 +816,7 @@ void XrdHttpReq::appendOpaque(XrdOucString &s, XrdSecEntity *secent, char *hash,
           free(s1);
         }
       }
-      
+
       if (secent->grps) {
         s += "&xrdhttpgrps=";
         char *s1 = quote(secent->grps);
@@ -819,7 +825,7 @@ void XrdHttpReq::appendOpaque(XrdOucString &s, XrdSecEntity *secent, char *hash,
           free(s1);
         }
       }
-      
+
       if (secent->endorsements) {
         s += "&xrdhttpendorsements=";
         char *s1 = quote(secent->endorsements);
@@ -828,7 +834,7 @@ void XrdHttpReq::appendOpaque(XrdOucString &s, XrdSecEntity *secent, char *hash,
           free(s1);
         }
       }
-      
+
       if (secent->credslen) {
         s += "&xrdhttpcredslen=";
         char buf[16];
@@ -839,7 +845,7 @@ void XrdHttpReq::appendOpaque(XrdOucString &s, XrdSecEntity *secent, char *hash,
           free(s1);
         }
       }
-      
+
       if (secent->credslen) {
         if (secent->creds) {
           s += "&xrdhttpcreds=";
@@ -855,7 +861,7 @@ void XrdHttpReq::appendOpaque(XrdOucString &s, XrdSecEntity *secent, char *hash,
           }
         }
       }
-      
+
     }
   }
 
@@ -866,7 +872,7 @@ void XrdHttpReq::appendOpaque(XrdOucString &s, XrdSecEntity *secent, char *hash,
 void XrdHttpReq::parseResource(char *res) {
   // Look for the first '?'
   char *p = strchr(res, '?');
-  
+
   // Not found, then it's just a filename
   if (!p) {
     resource.assign(res, 0);
@@ -874,15 +880,15 @@ void XrdHttpReq::parseResource(char *res) {
     resource.assign(buf, 0);
     resourceplusopaque.assign(buf, 0);
     free(buf);
-    
+
     // Sanitize the resource string, removing double slashes
     int pos = 0;
-    do { 
+    do {
       pos = resource.find("//", pos);
       if (pos != STR_NPOS)
         resource.erase(pos, 1);
     } while (pos != STR_NPOS);
-    
+
     return;
   }
 
@@ -894,15 +900,15 @@ void XrdHttpReq::parseResource(char *res) {
   char *buf = unquote((char *)resource.c_str());
   resource.assign(buf, 0);
   free(buf);
-      
+
   // Sanitize the resource string, removing double slashes
   int pos = 0;
-  do { 
+  do {
     pos = resource.find("//", pos);
     if (pos != STR_NPOS)
       resource.erase(pos, 1);
   } while (pos != STR_NPOS);
-  
+
   resourceplusopaque = resource;
   // Whatever comes after is opaque data to be parsed
   if (strlen(p) > 1) {
@@ -912,9 +918,9 @@ void XrdHttpReq::parseResource(char *res) {
     resourceplusopaque.append(p + 1);
     free(buf);
   }
-  
-  
-  
+
+
+
 }
 
 // Map an XRootD error code to an appropriate HTTP status code and message
@@ -1097,15 +1103,15 @@ int XrdHttpReq::ProcessHTTPReq() {
                       return keepalive ? 1 : -1;
                     }
                   }
-                  
+
                 }
 
 
           }
-      
+
       switch (reqstate) {
         case 0: // Stat()
-          
+
           // Do a Stat
           if (prot->doStat((char *) resourceplusopaque.c_str())) {
             XrdOucString errmsg = "Error stating";
@@ -1200,7 +1206,7 @@ int XrdHttpReq::ProcessHTTPReq() {
 
             // Prepare to chunk up the request
             writtenbytes = 0;
-            
+
             // We want to be invoked again after this request is finished
             return 0;
           }
@@ -1254,19 +1260,19 @@ int XrdHttpReq::ProcessHTTPReq() {
             return 1;
 
           }
-	  
+
           if (rwOps.size() <= 1) {
             // No chunks or one chunk... Request the whole file or single read
 
             long l;
             long long offs;
-            
+
             // --------- READ
             memset(&xrdreq, 0, sizeof (xrdreq));
             xrdreq.read.requestid = htons(kXR_read);
             memcpy(xrdreq.read.fhandle, fhandle, 4);
             xrdreq.read.dlen = 0;
-            
+
             if (rwOps.size() == 0) {
               l = (long)min(filesize-writtenbytes, (long long)1024*1024);
               offs = writtenbytes;
@@ -1287,7 +1293,7 @@ int XrdHttpReq::ProcessHTTPReq() {
             }
 
 
-            
+
             if (l <= 0) {
               if (l < 0) {
                 TRACE(ALL, " Data sizes mismatch.");
@@ -1306,7 +1312,7 @@ int XrdHttpReq::ProcessHTTPReq() {
               //prot->SendSimpleResp(522, NULL, NULL, (char *) "Invalid range request", 0);
               return -1;
             }
-            
+
             if (!prot->Bridge->Run((char *) &xrdreq, 0, 0)) {
               prot->SendSimpleResp(404, NULL, NULL, (char *) "Could not run read request.", 0, false);
               return -1;
@@ -1326,7 +1332,7 @@ int XrdHttpReq::ProcessHTTPReq() {
           // We want to be invoked again after this request is finished
           return 0;
         }
-        
+
       }
 
 
@@ -1706,7 +1712,7 @@ int XrdHttpReq::ProcessHTTPReq() {
       strcpy(buf2, host.c_str());
       char *pos = strchr(buf2, ':');
       if (pos) *pos = '\0';
-     
+
       // If we are a redirector we enforce that the host field is equal to
       // whatever was written in the destination url
       //
@@ -1725,7 +1731,7 @@ int XrdHttpReq::ProcessHTTPReq() {
       l = s.length() + 1;
       xrdreq.mv.dlen = htonl(l);
       xrdreq.mv.arg1len = htons(resourceplusopaque.length());
-      
+
       if (!prot->Bridge->Run((char *) &xrdreq, (char *) s.c_str(), l)) {
         prot->SendSimpleResp(501, NULL, NULL, (char *) "Could not run request.", 0, false);
         return -1;
@@ -1985,23 +1991,23 @@ int XrdHttpReq::PostProcessHTTPReq(bool final_) {
         if (final_) {
           stringresp += "</table></div><br><br><hr size=1>"
           "<p><span id=\"requestby\">Request by ";
-          
+
           if (prot->SecEntity.name)
             stringresp += prot->SecEntity.name;
           else
             stringresp += prot->Link->ID;
-          
+
           if (prot->SecEntity.vorg ||
             prot->SecEntity.name ||
             prot->SecEntity.moninfo ||
             prot->SecEntity.role)
             stringresp += " (";
-          
+
           if (prot->SecEntity.vorg) {
             stringresp += " VO: ";
             stringresp += prot->SecEntity.vorg;
           }
-          
+
           if (prot->SecEntity.moninfo) {
             stringresp += " DN: ";
             stringresp += prot->SecEntity.moninfo;
@@ -2010,8 +2016,8 @@ int XrdHttpReq::PostProcessHTTPReq(bool final_) {
               stringresp += " DN: ";
               stringresp += prot->SecEntity.name;
             }
-          
-          
+
+
           if (prot->SecEntity.role) {
             stringresp += " Role: ";
             stringresp += prot->SecEntity.role;
@@ -2021,25 +2027,25 @@ int XrdHttpReq::PostProcessHTTPReq(bool final_) {
               stringresp += ") ";
             }
           }
-          
-          
-           
+
+
+
           if (prot->SecEntity.vorg ||
             prot->SecEntity.moninfo ||
             prot->SecEntity.role)
             stringresp += " )";
-          
+
           if (prot->SecEntity.host) {
             stringresp += " ( ";
             stringresp += prot->SecEntity.host;
             stringresp += " )";
           }
-          
+
           stringresp += "</span></p>\n";
           stringresp += "<p>Powered by XrdHTTP ";
           stringresp += XrdVSTRING;
           stringresp += " (CERN IT-SDC)</p>\n";
-          
+
           prot->SendSimpleResp(200, NULL, NULL, (char *) stringresp.c_str(), 0, keepalive);
           stringresp.clear();
           return keepalive ? 1 : -1;
@@ -2056,14 +2062,14 @@ int XrdHttpReq::PostProcessHTTPReq(bool final_) {
             // Ugly hack. Be careful with EOS! Test with vanilla XrdHTTP and EOS, separately
             // A 404 on the preliminary stat() is fatal only
             // in a manager. A non-manager will ignore the result and try anyway to open the file
-            // 
+            //
             if (xrdresp == kXR_ok) {
-              
+
               if (iovN > 0) {
-                
+
                 // Now parse the stat info
                 TRACEI(REQ, "Stat for GET " << resource << " stat=" << (char *) iovP[0].iov_base);
-                
+
                 long dummyl;
                 sscanf((const char *) iovP[0].iov_base, "%ld %lld %ld %ld",
                        &dummyl,
@@ -2081,9 +2087,9 @@ int XrdHttpReq::PostProcessHTTPReq(bool final_) {
                 TRACEI(REQ, "Can't find the stat information for '" << resource << "' Internal error?");
               }
             }
-            
+
             // We are here if the request failed
-            
+
             if (prot->myRole == kXR_isManager) {
               prot->SendSimpleResp(httpStatusCode, NULL, NULL,
                                    httpStatusText.c_str(), httpStatusText.length(), false);
@@ -2110,12 +2116,12 @@ int XrdHttpReq::PostProcessHTTPReq(bool final_) {
 
 
               getfhandle();
-              
+
               // Now parse the stat info if we still don't have it
               if (filesize == 0) {
                 if (iovP[1].iov_len > 1) {
                   TRACEI(REQ, "Stat for GET " << resource << " stat=" << (char *) iovP[1].iov_base);
-              
+
                   long dummyl;
                   sscanf((const char *) iovP[1].iov_base, "%ld %lld %ld %ld",
                         &dummyl,
@@ -2132,10 +2138,10 @@ int XrdHttpReq::PostProcessHTTPReq(bool final_) {
                 else
                   TRACEI(ALL, "GET returned no STAT information. Internal error?");
               }
-              
+
               if (rwOps.size() == 0) {
                 // Full file.
-                
+
                 prot->SendSimpleResp(200, NULL, m_digest_header.empty() ? NULL : m_digest_header.c_str(), NULL, filesize, keepalive);
                 return 0;
               } else
@@ -2143,7 +2149,7 @@ int XrdHttpReq::PostProcessHTTPReq(bool final_) {
                 // Only one read to perform
                 int cnt = (rwOps[0].byteend - rwOps[0].bytestart + 1);
                 char buf[64];
-                
+
                 XrdOucString s = "Content-Range: bytes ";
                 sprintf(buf, "%lld-%lld/%lld", rwOps[0].bytestart, rwOps[0].byteend, filesize);
                 s += buf;
@@ -2185,7 +2191,7 @@ int XrdHttpReq::PostProcessHTTPReq(bool final_) {
 
 
             } else if (xrdresp != kXR_ok) {
-              
+
               // If it's a dir then we are in the wrong place and we did the wrong thing.
               //if (xrderrcode == 3016) {
               //  fileflags &= kXR_isDir;
@@ -2205,7 +2211,7 @@ int XrdHttpReq::PostProcessHTTPReq(bool final_) {
 
             // Nothing to do if we are postprocessing a close
             if (ntohs(xrdreq.header.requestid) == kXR_close) return keepalive ? 1 : -1;
-            
+
             // Close() if this was the third state of a readv, otherwise read the next chunk
             if ((reqstate == 3) && (ntohs(xrdreq.header.requestid) == kXR_readv)) return keepalive ? 1: -1;
 
@@ -2274,11 +2280,11 @@ int XrdHttpReq::PostProcessHTTPReq(bool final_) {
                 if (prot->SendData((char *) iovP[i].iov_base, iovP[i].iov_len)) return -1;
                 writtenbytes += iovP[i].iov_len;
               }
-              
+
             // Let's make sure that we avoid sending the same data twice,
             // in the case where PostProcessHTTPReq is invoked again
             this->iovN = 0;
-            
+
             return 0;
           }
 
@@ -2424,7 +2430,7 @@ int XrdHttpReq::PostProcessHTTPReq(bool final_) {
           DirListInfo e;
           e.size = 0;
           e.flags = 0;
-          
+
           // Now parse the answer building the entries vector
           if (iovN > 0) {
             e.path = resource.c_str();
@@ -2533,7 +2539,7 @@ int XrdHttpReq::PostProcessHTTPReq(bool final_) {
 
               if (e.path.length() && (e.path != ".") && (e.path != "..")) {
                 /* The entry is filled.
-          
+
                   <D:response xmlns:lp1="DAV:" xmlns:lp2="http://apache.org/dav/props/" xmlns:lp3="LCGDM:">
                       <D:href>/dpm/cern.ch/home/testers2.eu-emi.eu/</D:href>
                       <D:propstat>
